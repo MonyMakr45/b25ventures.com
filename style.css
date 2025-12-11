@@ -1,0 +1,615 @@
+:root{
+  --bg: #0b0c10;          /* dark stage */
+  --screen: #0e1116;      /* monitor screen */
+  --bezel: #1c212b;       /* monitor bezel */
+  --stand: #181c23;
+  --glow: #1da1f2;        /* subtle neon hint */
+  --text: #e6e6e6;
+  --muted: #b8c1cc;
+  --accent: #00ffd5;
+
+  /* animated by JS 0..1 */
+  --progress: 0;
+}
+
+*{ box-sizing: border-box; }
+html,body{ height:100%; }
+body{
+  margin:0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol";
+}
+
+.sr-only{
+  position:absolute!important; width:1px; height:1px; padding:0; margin:-1px;
+  overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0;
+}
+
+/* ---------- Landing ---------- */
+.landing{
+  /* Tall to allow a few seconds of scroll transition */
+  height: 260vh;
+  position: relative;
+  background:
+    radial-gradient(1200px 500px at 50% 70%, rgba(0,255,213,0.07), transparent 60%),
+    radial-gradient(800px 300px at 50% 80%, rgba(29,161,242,0.08), transparent 60%),
+    var(--bg);
+}
+
+/* give space after the monitor scroll section */
+#landing {
+  margin-bottom: 200px; /* adjust: 150–300px depending on your setup */
+}
+
+.landing-track{ position: relative; height: 100%; }
+
+.sticky{
+  position: sticky;
+  top: 0;
+}
+
+/* The “monitor” you fly into */
+.monitor{
+  height: 100dvh;
+  display: grid;
+  place-items: center;
+  transform:
+    translateY(calc(var(--progress) * -6vh))
+    scale(calc(1 + var(--progress) * 0.75));
+  transition: transform 0.06s linear;
+}
+
+.monitor-bezel{
+  width: min(82vw, 980px);
+  aspect-ratio: 16 / 9;
+  background: linear-gradient(180deg, #202632, var(--bezel));
+  border-radius: 18px;
+  box-shadow:
+    0 30px 120px rgba(0,0,0,0.65),
+    0 0 0 2px rgba(255,255,255,0.03) inset;
+  display: grid;
+  place-items: center;
+  position: relative;
+}
+
+.monitor-bezel::after{
+  /* Glow intensifies as you approach */
+  content: "";
+  position: absolute; inset: -2px;
+  border-radius: 20px;
+  box-shadow:
+    0 0 calc(30px + 90px * var(--progress)) rgba(0, 255, 213, 0.08),
+    0 0 calc(15px + 60px * var(--progress)) rgba(29, 161, 242, 0.10);
+  pointer-events: none;
+}
+
+.monitor-screen{
+  width: 92%;
+  height: 86%;
+  border-radius: 12px;
+  background: radial-gradient(120% 120% at 50% 50%, #0d1117 0%, var(--screen) 60%, #0a0d12 100%);
+  box-shadow:
+    0 0 0 2px rgba(255,255,255,0.03) inset,
+    0 0 60px rgba(0,0,0,0.6) inset;
+  display: flex;                 /* stack logo + hint vertically */
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+@media (max-width: 640px){
+  .monitor{
+    height: 130dvh; /* extra room for mobile UI chrome */
+  }
+
+  .monitor-screen{
+    height: 92%;
+  }
+
+  .hint{
+    opacity: 1;
+    margin-top: 1.1rem;
+  }
+}
+
+  .monitor-bezel{
+      height: 75%;
+  }
+
+/* Logo container – keeps the same motion/opacity behavior the text had */
+.logo{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform:
+    scale(calc(1 - var(--progress) * 0.02))
+    translateY(calc(var(--progress) * -4px));
+  opacity: calc(1 - var(--progress) * 0.05);
+}
+
+/* Actual logo image styling */
+.logo-image{
+  width: clamp(160px, 32vw, 260px);
+  height: auto;
+  border-radius: 18px; /* softens the square a little; tweak or remove */
+  background: #d3d3d3; /* matches the logo’s base; harmless if PNG has its own bg */
+  box-shadow:
+    0 0 16px rgba(0, 255, 213, 0.25),
+    0 0 40px rgba(29,161,242,0.18);
+  filter: drop-shadow(0 0 12px rgba(0,0,0,0.6));
+}
+
+.hint{
+  margin-top: 0.75rem;
+  font-size: clamp(0.85rem, 2.6vw, 1rem);
+  color: var(--muted);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  animation: hintPulse 2.2s ease-in-out infinite;
+  opacity: 0.9;                  /* always visible */
+}
+
+@media (max-height: 700px){
+  .hint{
+    margin-top: 0.4rem;
+  }
+}
+
+@keyframes hintPulse{
+  0%,100%{ opacity: .55; }
+  50%    { opacity: .95; }
+}
+
+.monitor-stand{
+  width: min(30vw, 340px);
+  height: 18px;
+  margin-top: 18px;
+  background: linear-gradient(180deg, #141922, var(--stand));
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+}
+
+/* ===== CRT flicker + scanlines for the landing monitor ===== */
+
+/* Subtle scanlines + vignette overlay */
+.monitor-screen::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    /* slight vignette */
+    radial-gradient(120% 140% at 50% 50%, transparent 55%, rgba(0,0,0,0.35) 100%),
+    /* scanlines */
+    repeating-linear-gradient(
+      to bottom,
+      rgba(255,255,255,0.02) 0px,
+      rgba(255,255,255,0.02) 1px,
+      rgba(0,0,0,0.02) 2px,
+      rgba(0,0,0,0.02) 4px
+    );
+  mix-blend-mode: screen;
+  opacity: .6;
+  transition: opacity .2s ease;
+}
+
+/* Slight RGB subpixel fringing on glow */
+.monitor-screen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg,
+      rgba(255,0,0,0.06),
+      rgba(0,255,0,0.06),
+      rgba(0,0,255,0.06)
+    );
+  mix-blend-mode: lighten;
+  opacity: .12;
+}
+
+/* Baseline soft flicker while on landing */
+.monitor-screen.flicker {
+  animation: crtFlicker 2.2s infinite;
+}
+
+/* Brief, stronger flicker + micro jitter as you 'enter' */
+.monitor-screen.entering {
+  animation:
+    crtFlicker 1s steps(24, end) infinite,
+    crtJitter 140ms linear infinite;
+}
+
+.monitor-screen.entering::before { opacity: .75; }
+
+/* ---------- Content wrapper ---------- */
+.content{
+  background: #0c0f15;
+  padding: 40px 20px 80px;
+  border-top: 1px solid rgba(255,255,255,0.04);
+}
+
+/* Containers for the two sections only */
+.container{
+  max-width: 980px;
+  margin: 0 auto 36px;
+}
+
+/* OpenSea Section Styling */
+.opensea-section {
+  margin: 60px auto;
+  text-align: center;
+}
+
+.opensea-card {
+  margin-bottom: 20px;
+  background: #0e131c;
+  border: 2px solid #202636;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+  padding: 20px;
+  display: inline-block;
+  max-width: 800px;
+}
+
+.opensea-banner {
+  width: 100%;
+  max-width: 520px;
+  border-radius: 10px;
+  margin-bottom: 15px;
+}
+
+.opensea-card h2 {
+  color: #7dd3fc;
+  font-size: 1.6rem;
+  margin: 10px 0;
+}
+
+.opensea-card a {
+  color: #58e7a3;
+  text-decoration: none;
+}
+.opensea-card a:hover {
+  text-decoration: underline;
+}
+
+/* Make Twitter embed centered nicely */
+.twitter-tweet{
+  margin: 22px auto !important;
+}
+
+/* ===== $BTFSTR Chart Section ===== */
+.chart-section{
+  padding-top: 8px;
+  margin-bottom: 48px;
+}
+
+.chart-title{
+  margin: 0 0 6px;
+  font-size: 1.4rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: #cfe8ff;
+}
+
+.chart-subtitle{
+  margin: 0 0 18px;
+  font-size: 0.95rem;
+  color: var(--muted);
+  max-width: 640px;
+}
+
+.chart-frame-wrap{
+  position: relative;
+  width: 100%;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #05070b;
+  border: 1px solid #202636;
+  box-shadow:
+    0 18px 40px rgba(0,0,0,0.6),
+    0 0 30px rgba(0,255,213,0.12);
+  /* 16:9-ish aspect via padding trick for better responsiveness */
+  padding-top: 56.25%;
+}
+
+.chart-frame{
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border-radius: inherit;
+}
+
+.chart-footer{
+  margin: 14px 0 0;
+  font-size: 0.85rem;
+  color: #7b8aa0;
+}
+
+.chart-footer a{
+  color: #58e7a3;
+  text-decoration: none;
+}
+
+.chart-footer a:hover{
+  text-decoration: underline;
+}
+
+/* Slightly taller on very small screens */
+@media (max-width: 640px){
+  .chart-frame-wrap{
+    padding-top: 65%;
+  }
+}
+
+/* Your override — this one wins */
+@media (max-width: 640px){
+  .chart-frame-wrap{
+    height: 500px;
+    padding-top: 0;
+  }
+}
+
+/* BTFSTR dashboard section */
+#btfstr-dashboard {
+  padding: 32px 16px;
+  max-width: 1100px;
+  margin: 0 auto;              /* centers on larger screens */
+}
+
+#btfstr-dashboard h2 {
+  margin: 0 0 8px;
+  font-size: clamp(1.5rem, 2.4vw, 2.2rem);
+}
+
+#btfstr-dashboard p {
+  margin: 0 0 16px;
+  font-size: clamp(0.9rem, 1.6vw, 1rem);
+  opacity: 0.85;
+}
+
+/* Make sure iframe is clean + responsive */
+#btfstr-dashboard iframe {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  border: none;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
+}
+
+/* Mobile tweaks */
+@media (max-width: 768px) {
+  #btfstr-dashboard {
+    padding: 24px 12px 40px;
+  }
+
+  #btfstr-dashboard iframe {
+    height: 600px;   /* a bit shorter on mobile; adjust if needed */
+  }
+}
+
+/* ===== Right-side floating dock ===== */
+.side-dock{
+  position: fixed;
+  top: 50%;
+  right: max(env(safe-area-inset-right, 0px), 20px);
+  transform: translateY(-50%) translateX(220%);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 50;
+  transition: transform .35s ease, opacity .35s ease, box-shadow .25s ease;
+  background: rgba(14,19,28,0.85);
+  border: 1px solid #202636;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.35);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.side-dock.show{
+  transform: translateY(-50%) translateX(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.dock-list{
+  list-style: none;
+  margin: 0;
+  padding: 14px 16px 14px 16px;
+  display: grid;
+  gap: 10px;
+  min-width: 220px;
+}
+
+.dock-list a{
+  display: block;
+  font: 600 14px/1.2 "Inter", system-ui, Arial, sans-serif;
+  color: #e6f0ff;
+  text-decoration: none;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: linear-gradient(180deg, #0f1420, #0b0f18);
+}
+
+.dock-list a:hover{
+  border-color: #2a3b55;
+  background: linear-gradient(180deg, #131a28, #0f1622);
+  box-shadow: 0 6px 16px rgba(0,0,0,.25);
+}
+
+/* Tiny collapse/expand chevron */
+.dock-toggle{
+  position: absolute;
+  left: -28px;
+  top: 50%;
+  transform: translateY(-50%) rotate(180deg); /* points left when open */
+  width: 28px;
+  height: 44px;
+  border-radius: 10px 0 0 10px;
+  border: 1px solid #202636;
+  border-right: 0;
+  background: #0e131c;
+  color: #9fb7d8;
+  cursor: pointer;
+  box-shadow: -6px 0 12px rgba(0,0,0,.25);
+}
+
+.side-dock.collapsed .dock-toggle{
+  transform: translateY(-50%) rotate(0deg); /* points right when closed */
+}
+
+.side-dock.collapsed .dock-list{
+  display: none;
+}
+
+/* Hide on small screens where there is no extra right space */
+@media (max-width: 1024px){
+  .side-dock{ display: none; }
+}
+
+/* ===== Footer Site Map ===== */
+.site-footer{
+  background: #05070b;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  padding: 32px 16px 40px;
+  color: var(--muted);
+}
+
+.footer-container{
+  max-width: 980px;
+  margin: 0 auto;
+}
+
+.footer-title{
+  margin: 0 0 14px;
+  font-size: 1.1rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: #cfe8ff;
+  opacity: 0.9;
+}
+
+.footer-links{
+  list-style: none;
+  margin: 0 0 18px;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+
+.footer-links li{
+  margin: 0;
+}
+
+.footer-links a{
+  display: inline-block;
+  font-size: 0.9rem;
+  color: #e6f0ff;
+  text-decoration: none;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(88, 120, 170, 0.6);
+  background: radial-gradient(circle at 0 0, rgba(0,255,213,0.12), transparent 55%),
+              rgba(10,14,22,0.95);
+}
+
+.footer-links a:hover{
+  border-color: #58e7a3;
+  box-shadow: 0 0 14px rgba(0,255,213,0.22);
+}
+
+.footer-meta{
+  margin: 0;
+  font-size: 0.8rem;
+  color: #7b8aa0;
+  opacity: 0.9;
+}
+
+/* Stack nicely on narrow screens */
+@media (max-width: 640px){
+  .footer-links{
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .footer-links a{
+    width: 100%;
+    text-align: center;
+  }
+
+  .footer-title{
+    text-align: center;
+  }
+
+  .footer-meta{
+    margin-top: 8px;
+    text-align: center;
+  }
+}
+/* ===== Mobile Compact Footer ===== */
+.mobile-footer {
+  display: none;
+}
+
+.mobile-footer-toggle {
+  width: 100%;
+  padding: 12px;
+  margin-top: 14px;
+  font-size: 1rem;
+  font-weight: 600;
+  text-align: center;
+  color: #e6f0ff;
+  background: #0e131c;
+  border: 1px solid #202636;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.mobile-footer-links {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0 0;
+  display: none;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mobile-footer-links a {
+  display: block;
+  padding: 10px;
+  text-align: center;
+  border-radius: 10px;
+  background: rgba(10,14,22,.9);
+  border: 1px solid rgba(88,120,170,.35);
+  color: #e6f0ff;
+  text-decoration: none;
+}
+
+.mobile-footer-links a:hover {
+  border-color: #58e7a3;
+  box-shadow: 0 0 10px rgba(0,255,213,0.18);
+}
+
+/* Show on small screens only */
+@media (max-width: 640px) {
+  .mobile-footer {
+    display: block;
+    margin-top: 30px;
+  }
+
+  /* Hide big desktop-style footer link row */
+  .footer-links {
+    display: none;
+  }
+}

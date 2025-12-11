@@ -1,0 +1,21 @@
+    <!-- Keys Gallery -->
+    <section class="container keys">
+      <div class="keys-grid">
+        <figure class="key" style="--i:3">
+          <img src="Diamond_Key.webp" alt="Diamond Key" width="803" height="535" loading="lazy">
+          <figcaption>Diamond</figcaption>
+        </figure>
+        <figure class="key" style="--i:0">
+          <img src="Gold_Key.webp" alt="Gold Key" width="803" height="535" loading="lazy">
+          <figcaption>Gold</figcaption>
+        </figure>
+        <figure class="key" style="--i:1">
+          <img src="Silver_Key.webp" alt="Silver Key" width="803" height="535" loading="lazy">
+          <figcaption>Silver</figcaption>
+        </figure>
+        <figure class="key" style="--i:2">
+          <img src="Bronze_Key.webp" alt="Bronze Key" width="803" height="535" loading="lazy">
+          <figcaption>Bronze</figcaption>
+        </figure>
+      </div>
+    </section>

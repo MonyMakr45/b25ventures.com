@@ -1,0 +1,91 @@
+WITH params AS (
+    SELECT
+        /* token + important infra addresses */
+        0xA01A7E0d104aa9c0978DE6cf8ECD679299722b28 AS btfstr,
+        0x000000000004444c5dc75cB358380D2e3dE08A90 AS pool_manager,
+        0x5e8A308B07194d115bcF78dac9a426C7b46Ae444 AS hook_or_router,
+        0x753cf57210d2be5239c26d8c5f0b30013398aa5f AS treasury,
+        0x0000000000000000000000000000000000000000 AS zero_addr,
+        0x000000000000000000000000000000000000dEaD AS dead_addr
+),
+
+-- 1) All BTFSTR transfers for the last 30 days
+raw_transfers AS (
+    SELECT
+        t.block_time,
+        t.tx_hash,
+        t."from",
+        t."to",
+        -- IMPORTANT: no / 1e18 here, amount is already in token units
+        t.amount AS btfstr_amount
+    FROM tokens.transfers t
+    JOIN params p
+      ON t.contract_address = p.btfstr
+    WHERE t.block_time >= now() - INTERVAL '30' day
+),
+
+-- 2) Classify each transfer as internal ↔ external (buy / sell)
+wallet_side_rows AS (
+    SELECT
+        CASE
+            -- internal -> external  = BUY (wallet receives)
+            WHEN t."from" IN (p.pool_manager, p.hook_or_router, p.treasury, p.zero_addr, p.dead_addr)
+             AND t."to"   NOT IN (p.pool_manager, p.hook_or_router, p.treasury, p.zero_addr, p.dead_addr)
+                THEN t."to"
+
+            -- external -> internal  = SELL (wallet sends)
+            WHEN t."to"   IN (p.pool_manager, p.hook_or_router, p.treasury, p.zero_addr, p.dead_addr)
+             AND t."from" NOT IN (p.pool_manager, p.hook_or_router, p.treasury, p.zero_addr, p.dead_addr)
+                THEN t."from"
+
+            ELSE NULL
+        END AS wallet_address,
+
+        CASE
+            -- internal -> external  = wallet bought
+            WHEN t."from" IN (p.pool_manager, p.hook_or_router, p.treasury, p.zero_addr, p.dead_addr)
+             AND t."to"   NOT IN (p.pool_manager, p.hook_or_router, p.treasury, p.zero_addr, p.dead_addr)
+                THEN  btfstr_amount
+
+            -- external -> internal  = wallet sold
+            WHEN t."to"   IN (p.pool_manager, p.hook_or_router, p.treasury, p.zero_addr, p.dead_addr)
+             AND t."from" NOT IN (p.pool_manager, p.hook_or_router, p.treasury, p.zero_addr, p.dead_addr)
+                THEN -btfstr_amount
+
+            ELSE 0
+        END AS btfstr_delta
+    FROM raw_transfers t
+    CROSS JOIN params p
+),
+
+-- 3) One row per wallet: net 30-day BTFSTR bought
+wallet_net_30d AS (
+    SELECT
+        wallet_address,
+        SUM(btfstr_delta) AS net_btfstr_bought
+    FROM wallet_side_rows
+    WHERE wallet_address IS NOT NULL
+    GROUP BY wallet_address
+)
+
+-- 4) Final leaderboard with nice 2-decimal output
+SELECT
+    ROW_NUMBER() OVER (ORDER BY net_btfstr_bought DESC) AS rank,
+    wallet_address AS buyer,
+
+    -- raw numeric value (should now be things like 8,159,592)
+    net_btfstr_bought AS net_btfstr_raw,
+
+    -- rounded to 2 decimals
+    ROUND(net_btfstr_bought, 2) AS net_btfstr_bought_rounded,
+
+    -- pretty string: "8,159,592.00"
+    format_number(CAST(ROUND(net_btfstr_bought, 2) AS double)) AS net_btfstr_bought_pretty
+
+FROM wallet_net_30d w
+JOIN params p ON TRUE
+WHERE
+    net_btfstr_bought > 0
+    AND wallet_address <> p.treasury
+    AND wallet_address <> 0xd828077a8df72bd384e640fd07237f04b04a794a  -- hide your wallet
+ORDER BY net_btfstr_bought DESC;

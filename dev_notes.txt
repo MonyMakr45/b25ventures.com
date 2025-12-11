@@ -1,0 +1,9 @@
+Flickers the landing page
+Adds key images .webp files
+"Etherscan is an easy fix or replace"
+Adds Side Bar pop up menu
+Mobile aesthetic update
+Corrected links
+Remove $MTC Etherscan embed
+Added Opensea mint embed
+Added philosophy PDF
