@@ -7,3 +7,4 @@ Corrected links
 Remove $MTC Etherscan embed
 Added Opensea mint embed
 Added philosophy PDF
+Added Dune Dashboard and reward wallet tracking script
